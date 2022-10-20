@@ -1,0 +1,15 @@
+{
+  "name": "fairy-rs",
+  "packageManager": "yarn@3.2.4",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "yarn workspaces foreach -p -i --topological-dev run build"
+  },
+  "devDependencies": {
+    "typescript": "^4.8.4"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}

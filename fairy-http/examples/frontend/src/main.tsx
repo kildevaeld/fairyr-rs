@@ -1,0 +1,39 @@
+// import { TEST } from "./other";
+
+import React, { useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import image from "./assets/img.png";
+import { createStitches } from "@stitches/react";
+import { TEST } from "./other.js";
+import Ky from "ky";
+
+console.log(React);
+
+const { styled } = createStitches({});
+
+const Test = styled("div", {
+  backgroundColor: "gray",
+});
+
+function App() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    Ky.default.get("/src/main.tsx").text((resp) => console.log(resp));
+  }, []);
+
+  return (
+    <Test>
+      <img src={image} width="200px" />
+      <h1>
+        Hello: {count} - {process.env.NODE_ENV} {TEST}
+      </h1>
+      <button onClick={() => setCount(count + 1)}>Click</button>
+    </Test>
+  );
+}
+
+let root = createRoot(document.body.querySelector("#root"));
+
+root.render(<App />);
+console.log("Hello, World!", React);

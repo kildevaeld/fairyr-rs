@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+  "fairy-core",
+  "fairy-dev",
+  "fairy-http", # "fairy-render",
+]

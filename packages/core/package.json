@@ -1,0 +1,15 @@
+{
+  "name": "@fairy/core",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.8.4"
+  }
+}
