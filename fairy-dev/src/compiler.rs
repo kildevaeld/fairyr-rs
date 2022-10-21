@@ -8,7 +8,6 @@ use std::{
 };
 use swc::{
     config::{JscConfig, Options},
-    resolver::NodeResolver,
     TransformOutput,
 };
 use swc_atoms::{js_word, JsWord};
@@ -38,48 +37,63 @@ use swc_ecma_transforms_optimization::inline_globals;
 use crate::{
     loader::{FileLoader, Loader},
     package::Package,
+    resolver::Resolver,
     transformers::{
         AssetsTransform, Externals as ExternalTransform, ImportTransform, ImportTransformer,
     },
 };
 
-pub struct DependencyBundle {
-    pub(crate) cm: Lrc<SourceMap>,
-    pub(crate) bundle: Bundle,
-}
+pub type NodeResolver = CachingResolver<Resolver>;
 
-impl DependencyBundle {
-    pub fn to_bytes(&self, minify: bool) -> anyhow::Result<Vec<u8>> {
-        let mut buf = vec![];
+// #[cfg(not(feature = "resolver"))]
+// pub struct Wrapper {
+//     i: NodeModulesResolver,
+// }
 
-        {
-            let wr = JsWriter::new(self.cm.clone(), "\n", &mut buf, None);
-            let mut emitter = Emitter {
-                cfg: swc_ecma_codegen::Config {
-                    minify,
-                    ..Default::default()
-                },
-                cm: self.cm.clone(),
-                comments: None,
-                wr: if minify {
-                    Box::new(omit_trailing_semi(wr)) as Box<dyn WriteJs>
-                } else {
-                    Box::new(wr) as Box<dyn WriteJs>
-                },
-            };
+// #[cfg(not(feature = "resolver"))]
+// impl Wrapper {
+//     pub fn new(root: PathBuf) -> Wrapper {
+//         Wrapper {
+//             i: NodeModulesResolver::default(),
+//         }
+//     }
+// }
 
-            emitter.emit_module(&self.bundle.module)?;
-        }
+// #[cfg(not(feature = "resolver"))]
+// impl Resolve for Wrapper {
+//     fn resolve(&self, base: &FileName, module_specifier: &str) -> Result<FileName, anyhow::Error> {
+//         println!("base '{}', module: '{}'", base, module_specifier);
+//         let ret = self.i.resolve(base, module_specifier)?;
+//         println!("ret {}", ret);
+//         Ok(ret)
+//     }
+// }
 
-        Ok(buf)
-    }
+// #[cfg(feature = "resolver")]
+// pub struct Wrapper {
+//     i: Resolver,
+// }
 
-    pub fn to_string(&self, minify: bool) -> anyhow::Result<String> {
-        let bytes = self.to_bytes(minify)?;
-        let string = String::from_utf8(bytes)?;
-        Ok(string)
-    }
-}
+// #[cfg(feature = "resolver")]
+// impl Wrapper {
+//     pub fn new(root: PathBuf) -> Wrapper {
+//         Wrapper {
+//             i: Resolver::new(root),
+//         }
+//     }
+// }
+
+// #[cfg(feature = "resolver")]
+// impl Resolve for Wrapper {
+//     fn resolve(&self, base: &FileName, module_specifier: &str) -> Result<FileName, anyhow::Error> {
+//         println!("base '{}', module: '{}'", base, module_specifier);
+//         let ret = self.i.resolve(base, module_specifier)?;
+//         println!("ret {}", ret);
+//         Ok(ret)
+//     }
+// }
+
+// pub type NodeResolver = CachingResolver<Wrapper>;
 
 pub struct Compiler {
     cm: Lrc<SourceMap>,
@@ -105,9 +119,13 @@ impl Compiler {
         let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, None);
         let globals = Globals::default();
 
+        // let resolver = CachingResolver::new(
+        //     4096,
+        //     Resolver::new(root.clone()), //NodeModulesResolver::new(TargetEnv::Node, Default::default(), true),
+        // );
         let resolver = CachingResolver::new(
             4096,
-            NodeModulesResolver::new(TargetEnv::Node, Default::default(), true),
+            Resolver::new(root.clone()), //NodeModulesResolver::new(TargetEnv::Node, Default::default(), true),
         );
 
         let plugins = vec![
@@ -139,7 +157,7 @@ impl Compiler {
     }
 
     pub fn resolve(&self, name: &str) -> anyhow::Result<Package> {
-        let filename = FileName::Real(self.root.join("main"));
+        let filename = FileName::Real(self.root.join("main.js"));
 
         let found = self.resolver.resolve(&filename, name)?;
 

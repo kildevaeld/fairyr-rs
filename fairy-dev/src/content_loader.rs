@@ -69,8 +69,13 @@ impl ContentLoader for ScriptLoader {
         let content = if path.starts_with(NODE_MODULES_PREFIX) {
             let file_name = path.to_string().replace(NODE_MODULES_PREFIX, "");
 
-            let bundle = self.externals.get_or_bundle(&self.compiler, &file_name)?;
-
+            let bundle = match self.externals.get_or_bundle(&self.compiler, &file_name) {
+                Ok(ret) => ret,
+                Err(err) => {
+                    log::error!("could not bundle '{}': {:?}", path, err);
+                    return Err(err);
+                }
+            };
             bundle
         } else {
             let full_path = match self.resolve(path) {

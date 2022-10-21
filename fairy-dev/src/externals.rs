@@ -31,6 +31,8 @@ impl Externals {
             return Ok(found.clone());
         }
 
+        log::debug!("bundle {}", name);
+
         let bundle = self.bundler.bundle(compiler, name)?;
 
         let content = Content::new(bundle.to_bytes(false)?);

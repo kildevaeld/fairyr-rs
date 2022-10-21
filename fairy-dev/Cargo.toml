@@ -9,13 +9,17 @@ version = "0.1.0"
 concurrent = ["rayon", "swc_common/concurrent", "swc/concurrent", "swc_bundler/concurrent", "parking_lot"]
 default = []
 
+resolver = []
+
 [dependencies]
 Inflector = "0.11"
 anyhow = "1"
 fairy-core = {path = "../fairy-core"}
 
 locking = {git = "https://github.com/kildevaeld/stuff-rs", features = ["parking_lot", "lock"]}
+log = "0.4"
 mime = "0.3"
+mime_guess = {version = "2"}
 parking_lot = {version = "0.12", optional = true}
 pathdiff = "0.2"
 rayon = {version = "1", optional = true}
@@ -35,4 +39,5 @@ swc_ecma_transforms_base = "0.111"
 swc_ecma_transforms_optimization = "0.167"
 swc_ecma_visit = {version = "0.80"}
 
-mime_guess = {version = "2"}
+[dev-dependencies]
+pretty_env_logger = "0.4"

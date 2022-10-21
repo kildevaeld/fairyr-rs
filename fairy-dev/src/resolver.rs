@@ -1,42 +1,58 @@
-use relative_path::RelativePath;
+use std::path::PathBuf;
 
-use crate::{
-    compiler::Compiler,
-    content_loader::{AssetLoader, ContentLoaderBox, Payload, ScriptLoader},
-};
+use anyhow::bail;
+use fairy_core::{ImportHint, TargetEnv};
+use pathdiff::diff_paths;
+use relative_path::RelativePathBuf;
+use swc_bundler::Resolve;
+use swc_common::FileName;
 
 pub struct Resolver {
-    pub loaders: Vec<ContentLoaderBox>,
+    i: fairy_core::Resolver,
 }
 
 impl Resolver {
-    pub fn new(compiler: Compiler) -> Resolver {
-        let root = compiler.root().to_path_buf();
-
-        let loaders = vec![
-            Box::new(ScriptLoader::new(compiler)) as ContentLoaderBox,
-            Box::new(AssetLoader::new(root)),
-        ];
-
-        Resolver { loaders }
+    pub fn new(root: PathBuf) -> Resolver {
+        Resolver {
+            i: fairy_core::Resolver::new(root),
+        }
     }
 }
 
-impl Resolver {
-    pub fn resolve(&self, path: impl AsRef<RelativePath>) -> anyhow::Result<Payload> {
-        let path = path.as_ref();
-
-        let mut last_err = None;
-
-        for loader in self.loaders.iter() {
-            match loader.load(path) {
-                Ok(ret) => return Ok(ret),
-                Err(err) => {
-                    last_err = Some(err);
+impl Resolve for Resolver {
+    fn resolve(&self, base: &FileName, module_specifier: &str) -> Result<FileName, anyhow::Error> {
+        let path = match base {
+            FileName::Real(real) => {
+                if real.is_absolute() {
+                    let diff = match diff_paths(real, &self.i.root()) {
+                        Some(diff) => diff,
+                        None => bail!("invalid path"),
+                    };
+                    RelativePathBuf::from_path(diff)?
+                } else {
+                    RelativePathBuf::from_path(real)?
                 }
-            };
-        }
+            }
+            _ => bail!("only real supported"),
+        };
 
-        Err(last_err.unwrap_or_else(|| anyhow::anyhow!("could not resolve")))
+        let package = self.i.resolve(
+            &path,
+            module_specifier,
+            ImportHint::Import,
+            TargetEnv::Browser,
+        );
+
+        match package {
+            Some(package) => {
+                // let file_name = FileName::Real(package.entry.path.to_path(&package.root));
+                let file_name = FileName::Real(package.entry.path.to_logical_path(&package.root));
+
+                Ok(file_name)
+            }
+            None => {
+                bail!("path not found")
+            }
+        }
     }
 }

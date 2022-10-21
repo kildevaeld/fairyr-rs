@@ -75,19 +75,19 @@ impl Load for Loader {
             },
         );
 
-        let module = helpers::HELPERS.set(&helpers, || {
-            // Apply transforms (like decorators pass)
-            let mut module = inline_globals.fold_module(module);
+        // let module = helpers::HELPERS.set(&helpers, || {
+        //     // Apply transforms (like decorators pass)
+        //     let mut module = inline_globals.fold_module(module);
 
-            loop {
-                module = pass.fold_module(module);
-                if !pass.changed() {
-                    break;
-                }
-            }
+        //     loop {
+        //         module = pass.fold_module(module);
+        //         if !pass.changed() {
+        //             break;
+        //         }
+        //     }
 
-            module
-        });
+        //     module
+        // });
 
         Ok(ModuleData {
             fm,

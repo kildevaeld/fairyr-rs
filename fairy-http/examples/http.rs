@@ -8,6 +8,8 @@ use relative_path::RelativePathBuf;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pretty_env_logger::init();
+
     let addr = ([127, 0, 0, 1], 3000).into();
 
     let mut env = HashMap::default();

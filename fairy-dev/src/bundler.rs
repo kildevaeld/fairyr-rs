@@ -116,10 +116,13 @@ impl Bundler {
             let mut visitor = RequireTransform::default();
             visitor.visit_mut_module(&mut bundle.module);
         } else {
-            compiler
-                .transformer
-                .process_module(&package.entry, &mut bundle.module);
+            // compiler
+            //     .transformer
+            //     .process_module(&package.entry, &mut bundle.module);
         }
+        compiler
+            .transformer
+            .process_module(&package.entry, &mut bundle.module);
 
         Ok(Bundle {
             bundle,
