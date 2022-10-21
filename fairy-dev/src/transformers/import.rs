@@ -1,19 +1,6 @@
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
-
-use inflector::Inflector;
 use relative_path::RelativePath;
-use swc_atoms::JsWord;
-use swc_common::{sync::Lrc, Span, DUMMY_SP};
-use swc_ecma_ast::{
-    AssignExpr, BindingIdent, CallExpr, ComputedPropName, Decl, Expr, Ident, ImportDecl,
-    ImportDefaultSpecifier, ImportNamedSpecifier, ImportSpecifier, Lit, MemberExpr, MemberProp,
-    Module, ModuleDecl, ModuleExportName, ModuleItem, Pat, Stmt, VarDecl, VarDeclKind,
-    VarDeclarator,
-};
-use swc_ecma_visit::{VisitMut, VisitMutWith};
+use swc_common::sync::Lrc;
+use swc_ecma_ast::{ImportDecl, Module, ModuleDecl, ModuleItem};
 
 pub trait ImportTransformer {
     fn rewrite_import(

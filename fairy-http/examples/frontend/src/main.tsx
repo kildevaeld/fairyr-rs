@@ -7,8 +7,6 @@ import { createStitches } from "@stitches/react";
 import { TEST } from "./other.js";
 import Ky from "ky";
 
-console.log(React);
-
 const { styled } = createStitches({});
 
 const Test = styled("div", {
@@ -19,7 +17,9 @@ function App() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    Ky.default.get("/src/main.tsx").text((resp) => console.log(resp));
+    Ky.get("/src/main.tsx")
+      .text()
+      .then((resp) => console.log(resp));
   }, []);
 
   return (
@@ -36,4 +36,3 @@ function App() {
 let root = createRoot(document.body.querySelector("#root"));
 
 root.render(<App />);
-console.log("Hello, World!", React);

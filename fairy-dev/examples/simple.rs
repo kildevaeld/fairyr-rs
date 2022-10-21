@@ -55,7 +55,7 @@ fn main() -> anyhow::Result<()> {
 
     // println!("{:#?}", package);
 
-    let names = resolver.resolve("/node_modules/.fairy/react-spring")?;
+    let names = resolver.resolve("/src/main.tsx")?;
 
     println!("{}", names.content.to_string()?);
 

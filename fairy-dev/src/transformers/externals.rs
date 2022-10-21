@@ -1,8 +1,6 @@
-use std::path::{Path, PathBuf};
-
 use inflector::Inflector;
-use relative_path::{RelativePath, RelativePathBuf};
-use swc_atoms::JsWord;
+use relative_path::RelativePath;
+use swc_atoms::{js_word, JsWord};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 
@@ -34,33 +32,31 @@ macro_rules! var_decl {
     };
 }
 
-pub struct Externals {
-    root: PathBuf,
-}
+pub struct Externals {}
 
 impl Externals {
-    pub fn new(root: PathBuf) -> Externals {
-        Externals { root }
+    pub fn new() -> Externals {
+        Externals {}
     }
-    pub fn resolve(&self, path: &RelativePath) -> bool {
-        if let Some(ext) = path.extension() {
-            if !EXTENSIONS.contains(&ext) {
-                return false;
-            }
-        }
+    // pub fn resolve(&self, path: &RelativePath) -> bool {
+    //     if let Some(ext) = path.extension() {
+    //         if !EXTENSIONS.contains(&ext) {
+    //             return false;
+    //         }
+    //     }
 
-        if path.to_path(&self.root).exists() {
-            return true;
-        }
+    //     if path.to_path(&self.root).exists() {
+    //         return true;
+    //     }
 
-        for ext in EXTENSIONS {
-            if path.with_extension(*ext).to_path(&self.root).exists() {
-                return true;
-            }
-        }
+    //     for ext in EXTENSIONS {
+    //         if path.with_extension(*ext).to_path(&self.root).exists() {
+    //             return true;
+    //         }
+    //     }
 
-        false
-    }
+    //     false
+    // }
 }
 
 impl ImportTransformer for Externals {
@@ -73,9 +69,6 @@ impl ImportTransformer for Externals {
         if import.src.value.starts_with(".") || import.src.value.starts_with("/") {
             return Some(import);
         }
-        // if !self.resolve(&RelativePathBuf::from(import.src.value.to_string())) {
-        //     return Some(import);
-        // }
 
         let node = import.clone();
 
@@ -83,7 +76,7 @@ impl ImportTransformer for Externals {
         import.src = Box::new(path.into());
 
         let local = Ident::new(
-            format!("$importCJS_${}", node.src.value.to_camel_case()).into(),
+            format!("$importFairy_{}$", node.src.value.to_camel_case()).into(),
             DUMMY_SP,
         );
 
@@ -97,7 +90,30 @@ impl ImportTransformer for Externals {
         for specifier in node.specifiers {
             match specifier {
                 ImportSpecifier::Default(default) => {
-                    let decl = var_decl!(default.local.clone(), Expr::Ident(local.clone()));
+                    let cond = CondExpr {
+                        span: DUMMY_SP,
+                        test: Expr::Member(MemberExpr {
+                            span: DUMMY_SP,
+                            obj: Expr::Ident(local.clone()).into(),
+                            prop: MemberProp::Computed(ComputedPropName {
+                                span: DUMMY_SP,
+                                expr: Expr::Lit(Lit::Str(js_word!("default").into())).into(),
+                            }),
+                        })
+                        .into(),
+                        cons: Expr::Member(MemberExpr {
+                            span: DUMMY_SP,
+                            obj: Expr::Ident(local.clone()).into(),
+                            prop: MemberProp::Computed(ComputedPropName {
+                                span: DUMMY_SP,
+                                expr: Expr::Lit(Lit::Str(js_word!("default").into())).into(),
+                            }),
+                        })
+                        .into(),
+                        alt: Expr::Ident(local.clone()).into(),
+                    };
+
+                    let decl = var_decl!(default.local.clone(), Expr::Cond(cond));
 
                     items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(decl.into()))));
                 }
@@ -122,7 +138,10 @@ impl ImportTransformer for Externals {
                     let decl = var_decl!(named.local, expr);
                     items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(decl.into()))));
                 }
-                ImportSpecifier::Namespace(star) => {}
+                ImportSpecifier::Namespace(star) => {
+                    let decl = var_decl!(star.local.clone(), Expr::Ident(local.clone()));
+                    items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(decl.into()))));
+                }
             }
         }
 

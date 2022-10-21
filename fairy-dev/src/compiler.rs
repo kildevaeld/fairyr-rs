@@ -1,7 +1,7 @@
 use anyhow::bail;
-use fairy_core::{find_package_root, Package, PackageJson};
+use fairy_core::Package;
 use pathdiff::diff_paths;
-use relative_path::{RelativePath, RelativePathBuf};
+use relative_path::RelativePath;
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
@@ -11,26 +11,19 @@ use swc::{
     TransformOutput,
 };
 use swc_atoms::{js_word, JsWord};
-use swc_bundler::{Bundle, Bundler, ModuleRecord, Resolve};
+use swc_bundler::{Bundler, ModuleRecord};
 use swc_common::{
     collections::AHashMap,
     errors::{ColorConfig, Handler, HANDLER},
     source_map::SourceMap,
     sync::Lrc,
-    FileName, FilePathMapping, Globals, Span, GLOBALS,
+    FilePathMapping, Globals, Span, GLOBALS,
 };
 use swc_ecma_ast::{
     Bool, EsVersion, Expr, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr,
     MetaPropKind, Program, PropName, Str,
 };
-use swc_ecma_codegen::{
-    text_writer::{omit_trailing_semi, JsWriter, WriteJs},
-    Emitter,
-};
-use swc_ecma_loader::{
-    resolvers::{lru::CachingResolver, node::NodeModulesResolver},
-    TargetEnv,
-};
+
 use swc_ecma_parser::{parse_file_as_module, Syntax, TsConfig};
 use swc_ecma_transforms_optimization::inline_globals;
 
@@ -42,63 +35,11 @@ use crate::{
     },
 };
 
-// pub type NodeResolver = CachingResolver<Resolver>;
-
-// #[cfg(not(feature = "resolver"))]
-// pub struct Wrapper {
-//     i: NodeModulesResolver,
-// }
-
-// #[cfg(not(feature = "resolver"))]
-// impl Wrapper {
-//     pub fn new(root: PathBuf) -> Wrapper {
-//         Wrapper {
-//             i: NodeModulesResolver::default(),
-//         }
-//     }
-// }
-
-// #[cfg(not(feature = "resolver"))]
-// impl Resolve for Wrapper {
-//     fn resolve(&self, base: &FileName, module_specifier: &str) -> Result<FileName, anyhow::Error> {
-//         println!("base '{}', module: '{}'", base, module_specifier);
-//         let ret = self.i.resolve(base, module_specifier)?;
-//         println!("ret {}", ret);
-//         Ok(ret)
-//     }
-// }
-
-// #[cfg(feature = "resolver")]
-// pub struct Wrapper {
-//     i: Resolver,
-// }
-
-// #[cfg(feature = "resolver")]
-// impl Wrapper {
-//     pub fn new(root: PathBuf) -> Wrapper {
-//         Wrapper {
-//             i: Resolver::new(root),
-//         }
-//     }
-// }
-
-// #[cfg(feature = "resolver")]
-// impl Resolve for Wrapper {
-//     fn resolve(&self, base: &FileName, module_specifier: &str) -> Result<FileName, anyhow::Error> {
-//         println!("base '{}', module: '{}'", base, module_specifier);
-//         let ret = self.i.resolve(base, module_specifier)?;
-//         println!("ret {}", ret);
-//         Ok(ret)
-//     }
-// }
-
-// pub type NodeResolver = CachingResolver<Wrapper>;
-
 pub struct Compiler {
     cm: Lrc<SourceMap>,
     root: PathBuf,
     compiler: swc::Compiler,
-    handler: Handler,
+    handler: Lrc<Handler>,
     globals: Globals,
     resolver: Lrc<Resolver>,
     env: Lrc<AHashMap<JsWord, Expr>>,
@@ -118,16 +59,11 @@ impl Compiler {
         let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, None);
         let globals = Globals::default();
 
-        // let resolver = CachingResolver::new(
-        //     4096,
-        //     Resolver::new(root.clone()), //NodeModulesResolver::new(TargetEnv::Node, Default::default(), true),
-        // );
         let resolver = Resolver::new(root.clone());
 
         let plugins = vec![
-            Box::new(ExternalTransform::new(root.clone()))
-                as Box<dyn ImportTransformer + Send + Sync>,
-            Box::new(AssetsTransform::new(root.clone())),
+            Box::new(ExternalTransform::new()) as Box<dyn ImportTransformer + Send + Sync>,
+            Box::new(AssetsTransform::new()),
         ];
 
         let transformer = ImportTransform::new(Lrc::new(plugins));
@@ -136,7 +72,7 @@ impl Compiler {
             root,
             cm,
             compiler,
-            handler,
+            handler: Lrc::new(handler),
             globals,
             resolver: Arc::new(resolver),
             env,
@@ -153,32 +89,6 @@ impl Compiler {
     }
 
     pub fn resolve(&self, name: &str) -> anyhow::Result<Package> {
-        // let filename = FileName::Real(self.root.join("main.js"));
-
-        // let found = self.resolver.resolve(&filename, name)?;
-
-        // let path = match found {
-        //     FileName::Real(path) => path,
-        //     _ => bail!("invalid path"),
-        // };
-
-        // let root = match find_package_root(&path) {
-        //     Some(path) => path,
-        //     None => bail!("could not find package root"),
-        // };
-
-        // let entry = match diff_paths(&path, &root) {
-        //     Some(diff) => RelativePathBuf::from_path(diff)?,
-        //     None => bail!("could not resolve entry"),
-        // };
-
-        // let pkgjson = PackageJson::load(&root)?;
-
-        // Ok(Package {
-        //     pkgjson,
-        //     root,
-        //     entry,
-        // })
         match self.resolver.resolve_external(name) {
             Some(ret) => Ok(ret),
             None => bail!("could not resolve"),
@@ -189,7 +99,7 @@ impl Compiler {
         &'a self,
         config: swc_bundler::Config,
     ) -> swc_bundler::Bundler<'a, Loader, Lrc<Resolver>> {
-        let loader = Loader::new(self.cm.clone(), self.env.clone());
+        let loader = Loader::new(self.cm.clone(), self.env.clone(), self.handler.clone());
 
         let bundler = Bundler::new(
             &self.globals,

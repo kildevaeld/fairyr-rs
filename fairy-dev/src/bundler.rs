@@ -57,7 +57,7 @@ impl Bundle {
 #[derive(Debug)]
 pub struct Bundler {
     minify: bool,
-    inline: bool, // resolver: NodeResolver,
+    inline: bool,
 }
 
 impl Default for Bundler {
@@ -121,14 +121,6 @@ impl Bundler {
             cm: compiler.cm().clone(),
         })
     }
-
-    // pub fn bundle_dependency(
-    //     &self,
-    //     compiler: &Compiler,
-    //     dependency: &Dependency,
-    // ) -> anyhow::Result<Bundle> {
-    //     self.bundle_package(compiler, dependency.package()?)
-    // }
 }
 
 struct Hook;

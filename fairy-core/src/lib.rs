@@ -1,4 +1,3 @@
-mod cache;
 mod config;
 pub mod package;
 mod resolver;

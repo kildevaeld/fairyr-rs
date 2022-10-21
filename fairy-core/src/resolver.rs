@@ -1,17 +1,13 @@
+use crate::{
+    find_nearest_external, find_nearest_package_json, module_type_from_ext,
+    package::{Exports, PACKAGE_JSON},
+    ModuleType, PackageJson, EXTENSIONS,
+};
+use pathdiff::diff_paths;
+use relative_path::{RelativePath, RelativePathBuf};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-};
-
-use pathdiff::diff_paths;
-use relative_path::{RelativePath, RelativePathBuf};
-use serde::de::Expected;
-
-use crate::{
-    find_nearest_external, find_nearest_node_modules, find_nearest_package_json,
-    module_type_from_ext,
-    package::{Exports, PACKAGE_JSON},
-    ModuleType, PackageJson, EXTENSIONS,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -142,6 +138,7 @@ impl Resolver {
             pkg_json.resolve_default(hint, target)
         };
 
+        log::debug!("resolved external: {:?} => {:?}", fp_pkg_root, ret);
         ret.map(|entry| Package {
             pkgjson: pkg_json,
             root: fp_pkg_root,
@@ -216,7 +213,7 @@ impl TargetEnv {
     fn export_fields(&self, hint: ImportHint) -> &[&'static str] {
         match self {
             TargetEnv::Browser => match hint {
-                ImportHint::Import => &["import", "browser", "require", "default"],
+                ImportHint::Import => &["browser", "import", "require", "default"],
                 ImportHint::Require => &["browser", "require", "default"],
             },
             TargetEnv::Node => match hint {

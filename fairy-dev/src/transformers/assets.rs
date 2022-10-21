@@ -1,6 +1,4 @@
-use std::path::{Path, PathBuf};
-
-use relative_path::{RelativePath, RelativePathBuf};
+use relative_path::RelativePath;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 
@@ -28,13 +26,11 @@ macro_rules! var_decl {
     };
 }
 
-pub struct AssetsTransform {
-    root: PathBuf,
-}
+pub struct AssetsTransform {}
 
 impl AssetsTransform {
-    pub fn new(root: PathBuf) -> AssetsTransform {
-        AssetsTransform { root }
+    pub fn new() -> AssetsTransform {
+        AssetsTransform {}
     }
 }
 
@@ -63,6 +59,7 @@ impl ImportTransformer for AssetsTransform {
         let first = import.specifiers.get(0).expect("import specifier");
 
         if let ImportSpecifier::Default(default) = first {
+            log::debug!("asset {}", default.local);
             let var = var_decl!(
                 default.local.clone(),
                 Expr::Lit(Lit::Str(src.to_string().into()))

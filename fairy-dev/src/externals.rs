@@ -11,21 +11,6 @@ pub struct Externals {
 }
 
 impl Externals {
-    // pub fn names<'a>(&'a self) -> impl Iterator<Item = &'a str> {
-    //     self.dependencies.keys().map(|m| m.as_str())
-    // }
-
-    pub fn get(&self, name: &str) -> Option<Content> {
-        self.dependencies.read().get(name).map(|m| m.clone())
-    }
-
-    pub fn try_get(&self, name: &str) -> anyhow::Result<Content> {
-        match self.dependencies.read().get(name) {
-            Some(ret) => Ok(ret.clone()),
-            None => anyhow::bail!("module not found: {}", name),
-        }
-    }
-
     pub fn get_or_bundle(&self, compiler: &Compiler, name: &str) -> anyhow::Result<Content> {
         if let Some(found) = self.dependencies.read().get(name) {
             return Ok(found.clone());

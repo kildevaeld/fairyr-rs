@@ -27,14 +27,20 @@ pub struct Loader {
     pub cm: Lrc<SourceMap>,
     pub env: Lrc<AHashMap<JsWord, Expr>>,
     pub globals: Lrc<AHashMap<JsWord, Expr>>,
+    pub handler: Lrc<Handler>,
 }
 
 impl Loader {
-    pub fn new(cm: Lrc<SourceMap>, env: Lrc<AHashMap<JsWord, Expr>>) -> Loader {
+    pub fn new(
+        cm: Lrc<SourceMap>,
+        env: Lrc<AHashMap<JsWord, Expr>>,
+        handler: Lrc<Handler>,
+    ) -> Loader {
         Loader {
             cm,
             env,
             globals: Default::default(),
+            handler,
         }
     }
 }
@@ -78,20 +84,17 @@ impl Load for Loader {
         let module = helpers::HELPERS.set(&helpers, || {
             // Apply transforms (like decorators pass)
 
-            HANDLER.set(
-                &Handler::with_tty_emitter(ColorConfig::Auto, true, false, None),
-                move || {
-                    let mut module = inline_globals.fold_module(module);
+            HANDLER.set(&self.handler, move || {
+                let mut module = inline_globals.fold_module(module);
 
-                    loop {
-                        module = pass.fold_module(module);
-                        if !pass.changed() {
-                            break;
-                        }
+                loop {
+                    module = pass.fold_module(module);
+                    if !pass.changed() {
+                        break;
                     }
-                    module
-                },
-            )
+                }
+                module
+            })
         });
 
         Ok(ModuleData {

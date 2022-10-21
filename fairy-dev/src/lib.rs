@@ -6,7 +6,6 @@ mod externals;
 mod fairy;
 pub mod loader;
 mod locket;
-// mod package;
 mod resolver;
 mod transformers;
 
