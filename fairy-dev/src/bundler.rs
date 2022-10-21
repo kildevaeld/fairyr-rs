@@ -56,15 +56,15 @@ impl Bundle {
 
 #[derive(Debug)]
 pub struct Bundler {
-    minify: bool,
+    // minify: bool,
     inline: bool,
 }
 
 impl Default for Bundler {
     fn default() -> Self {
         Bundler {
-            minify: false,
-            inline: true,
+            // minify: false,
+            inline: false,
         }
     }
 }
@@ -78,6 +78,9 @@ impl Bundler {
     pub fn bundle_package(&self, compiler: &Compiler, package: Package) -> anyhow::Result<Bundle> {
         let mut externals = Vec::default();
 
+        // Externalize self?
+        externals.push(package.pkgjson.name.clone().into());
+
         for (name, _) in package.pkgjson.peer_dependencies.into_iter() {
             externals.push(name.into());
         }
@@ -86,8 +89,8 @@ impl Bundler {
             require: true,
             disable_inliner: !self.inline,
             external_modules: externals,
-            disable_fixer: self.minify,
-            disable_hygiene: self.minify,
+            disable_fixer: false,   //self.minify,
+            disable_hygiene: false, //self.minify,
             disable_dce: false,
             module: swc_bundler::ModuleType::Es,
         });

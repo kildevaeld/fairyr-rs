@@ -1,11 +1,9 @@
-use std::path::PathBuf;
-
-use anyhow::bail;
-use relative_path::RelativePath;
-
 use crate::{
     externals::Externals, loader::NODE_MODULES_PREFIX, transformers::EXTENSIONS, Compiler, Content,
+    Error,
 };
+use relative_path::RelativePath;
+use std::path::PathBuf;
 
 pub struct Payload {
     pub mime: mime::Mime,
@@ -19,11 +17,11 @@ pub type ContentLoaderBox = Box<dyn ContentLoader + Send + Sync>;
 pub type ContentLoaderBox = Box<dyn ContentLoader>;
 
 pub trait ContentLoader {
-    fn load(&self, path: &RelativePath) -> anyhow::Result<Payload>;
+    fn load(&self, path: &RelativePath) -> Result<Payload, Error>;
 }
 
 impl ContentLoader for ContentLoaderBox {
-    fn load(&self, path: &RelativePath) -> anyhow::Result<Payload> {
+    fn load(&self, path: &RelativePath) -> Result<Payload, Error> {
         (&**self).load(path)
     }
 }
@@ -50,6 +48,15 @@ impl ScriptLoader {
 
         let fp = path.to_path(self.compiler.root());
         if fp.exists() {
+            let meta = match fp.metadata() {
+                Ok(ret) => ret,
+                Err(_) => return None,
+            };
+
+            if meta.is_dir() {
+                return None;
+            }
+
             return Some(fp);
         }
 
@@ -65,7 +72,7 @@ impl ScriptLoader {
 }
 
 impl ContentLoader for ScriptLoader {
-    fn load(&self, path: &RelativePath) -> anyhow::Result<Payload> {
+    fn load(&self, path: &RelativePath) -> Result<Payload, Error> {
         let content = if path.starts_with(NODE_MODULES_PREFIX) {
             let file_name = path.to_string().replace(NODE_MODULES_PREFIX, "");
 
@@ -73,14 +80,14 @@ impl ContentLoader for ScriptLoader {
                 Ok(ret) => ret,
                 Err(err) => {
                     log::error!("could not bundle '{}': {:?}", path, err);
-                    return Err(err);
+                    return Err(err.into());
                 }
             };
             bundle
         } else {
             let full_path = match self.resolve(path) {
                 Some(path) => path,
-                None => anyhow::bail!("path does not exits {:?}", path),
+                None => return Err(Error::NotFound),
             };
 
             Content::new(self.compiler.compile(full_path)?.code.into_bytes())
@@ -104,13 +111,23 @@ impl AssetLoader {
 }
 
 impl ContentLoader for AssetLoader {
-    fn load(&self, path: &RelativePath) -> anyhow::Result<Payload> {
+    fn load(&self, path: &RelativePath) -> Result<Payload, Error> {
         let ext = match path.extension() {
             Some(ext) => ext,
-            None => bail!("not extension"),
+            None => return Err(Error::NotFound),
         };
 
         let fp = path.to_path(&self.root);
+
+        if !fp.exists() {
+            return Err(Error::NotFound);
+        }
+
+        let meta = fp.metadata()?;
+
+        if meta.is_dir() {
+            return Err(Error::NotFound);
+        }
 
         let bytes = std::fs::read(fp)?;
 

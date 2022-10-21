@@ -8,6 +8,7 @@ pub mod loader;
 mod locket;
 mod resolver;
 mod transformers;
+mod error;
 
 pub use self::{
     bundler::{Bundle, Bundler},
@@ -15,6 +16,7 @@ pub use self::{
     content::Content,
     fairy::FairyDev,
     resolver::Resolver,
+    error::*,
 };
 
 use swc_atoms::JsWord;

@@ -1,3 +1,10 @@
+use crate::{
+    loader::{FileLoader, Loader},
+    resolver::Resolver,
+    transformers::{
+        AssetsTransform, Externals as ExternalTransform, ImportTransform, ImportTransformer,
+    },
+};
 use anyhow::bail;
 use fairy_core::Package;
 use pathdiff::diff_paths;
@@ -23,17 +30,8 @@ use swc_ecma_ast::{
     Bool, EsVersion, Expr, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr,
     MetaPropKind, Program, PropName, Str,
 };
-
 use swc_ecma_parser::{parse_file_as_module, Syntax, TsConfig};
 use swc_ecma_transforms_optimization::inline_globals;
-
-use crate::{
-    loader::{FileLoader, Loader},
-    resolver::Resolver,
-    transformers::{
-        AssetsTransform, Externals as ExternalTransform, ImportTransform, ImportTransformer,
-    },
-};
 
 pub struct Compiler {
     cm: Lrc<SourceMap>,

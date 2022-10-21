@@ -50,7 +50,12 @@ where
             let bytes = match ret {
                 Ok(ret) => match ret {
                     Ok(ret) => ret,
-                    Err(err) => return Outcome::Failure(Error::new(err)),
+                    Err(err) => match err {
+                        fairy_dev::Error::NotFound => {
+                            return Outcome::Next(req);
+                        }
+                        err => return Outcome::Failure(Error::new(err)),
+                    },
                 },
                 Err(err) => return Outcome::Failure(Error::new(err)),
             };
@@ -59,7 +64,6 @@ where
                 .set(dale_http::headers::ContentType::from(bytes.mime));
 
             Outcome::Success(resp)
-            // todo!()
         }
     }
 }

@@ -39,5 +39,7 @@ swc_ecma_transforms_base = "0.111"
 swc_ecma_transforms_optimization = "0.167"
 swc_ecma_visit = {version = "0.80"}
 
+thiserror = "1"
+
 [dev-dependencies]
 pretty_env_logger = "0.4"

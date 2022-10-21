@@ -658,6 +658,7 @@ dependencies = [
  "swc_ecma_transforms_base",
  "swc_ecma_transforms_optimization",
  "swc_ecma_visit",
+ "thiserror",
 ]
 
 [[package]]

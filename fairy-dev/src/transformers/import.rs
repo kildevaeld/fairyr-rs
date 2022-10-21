@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use relative_path::RelativePath;
 use swc_common::sync::Lrc;
 use swc_ecma_ast::{ImportDecl, Module, ModuleDecl, ModuleItem};
@@ -66,7 +68,25 @@ impl ImportTransform {
             self.process_import(file, import, &mut updated_items);
         }
 
-        *module_items = updated_items;
+        // TODO: Rewrite this
+        let mut seen = HashSet::<_>::default();
+        *module_items = updated_items
+            .into_iter()
+            .filter(move |item| {
+                //
+                match item {
+                    ModuleItem::ModuleDecl(ModuleDecl::Import(import)) => {
+                        if seen.contains(&import.specifiers) {
+                            false
+                        } else {
+                            seen.insert(import.specifiers.clone());
+                            true
+                        }
+                    }
+                    _ => true,
+                }
+            })
+            .collect();
     }
 
     pub fn process_module(&self, path: &RelativePath, module: &mut Module) {

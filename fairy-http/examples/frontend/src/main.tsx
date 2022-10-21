@@ -6,6 +6,7 @@ import image from "./assets/img.png";
 import { createStitches } from "@stitches/react";
 import { TEST } from "./other.js";
 import Ky from "ky";
+import { animated } from "react-spring";
 
 const { styled } = createStitches({});
 
@@ -23,13 +24,15 @@ function App() {
   }, []);
 
   return (
-    <Test>
-      <img src={image} width="200px" />
-      <h1>
-        Hello: {count} - {process.env.NODE_ENV} {TEST}
-      </h1>
-      <button onClick={() => setCount(count + 1)}>Click</button>
-    </Test>
+    <animated.div>
+      <Test>
+        <img src={image} width="200px" />
+        <h1>
+          Hello: {count} - {process.env.NODE_ENV} {TEST}
+        </h1>
+        <button onClick={() => setCount(count + 1)}>Click</button>
+      </Test>
+    </animated.div>
   );
 }
 
