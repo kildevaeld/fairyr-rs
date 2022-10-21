@@ -1,12 +1,7 @@
 use std::collections::HashMap;
 
-use crate::{
-    compiler::Compiler,
-    loader::NODE_MODULES_PREFIX,
-    package::{Dependency, Package},
-    transformers::RequireTransform,
-};
-use fairy_core::ModuleType;
+use crate::{compiler::Compiler, loader::NODE_MODULES_PREFIX, transformers::RequireTransform};
+use fairy_core::{ModuleType, Package};
 use relative_path::RelativePathBuf;
 use swc_atoms::js_word;
 use swc_bundler::{Bundle as SWCBundle, ModuleRecord};
@@ -101,7 +96,7 @@ impl Bundler {
 
         let dep = RelativePathBuf::from(format!(
             "{}{}/{}",
-            NODE_MODULES_PREFIX, &package.pkgjson.name, package.entry
+            NODE_MODULES_PREFIX, &package.pkgjson.name, package.entry.path
         ));
 
         let resolved = FileName::Real(dep.to_path(compiler.root()));
@@ -112,17 +107,14 @@ impl Bundler {
 
         let mut bundle = bundles.pop().unwrap();
 
-        if package.pkgjson.kind == ModuleType::Commonjs {
+        if package.entry.kind == ModuleType::Commonjs {
             let mut visitor = RequireTransform::default();
             visitor.visit_mut_module(&mut bundle.module);
         } else {
-            // compiler
-            //     .transformer
-            //     .process_module(&package.entry, &mut bundle.module);
+            compiler
+                .transformer
+                .process_module(&package.entry.path, &mut bundle.module);
         }
-        compiler
-            .transformer
-            .process_module(&package.entry, &mut bundle.module);
 
         Ok(Bundle {
             bundle,
@@ -130,13 +122,13 @@ impl Bundler {
         })
     }
 
-    pub fn bundle_dependency(
-        &self,
-        compiler: &Compiler,
-        dependency: &Dependency,
-    ) -> anyhow::Result<Bundle> {
-        self.bundle_package(compiler, dependency.package()?)
-    }
+    // pub fn bundle_dependency(
+    //     &self,
+    //     compiler: &Compiler,
+    //     dependency: &Dependency,
+    // ) -> anyhow::Result<Bundle> {
+    //     self.bundle_package(compiler, dependency.package()?)
+    // }
 }
 
 struct Hook;

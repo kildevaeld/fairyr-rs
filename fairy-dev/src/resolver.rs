@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::bail;
-use fairy_core::{ImportHint, TargetEnv};
+use fairy_core::{ImportHint, Package, TargetEnv};
 use pathdiff::diff_paths;
 use relative_path::RelativePathBuf;
 use swc_bundler::Resolve;
@@ -16,6 +16,11 @@ impl Resolver {
         Resolver {
             i: fairy_core::Resolver::new(root),
         }
+    }
+
+    pub fn resolve_external(&self, name: &str) -> Option<Package> {
+        self.i
+            .resolve("./main.js", name, ImportHint::Import, TargetEnv::Browser)
     }
 }
 

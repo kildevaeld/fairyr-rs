@@ -1,5 +1,5 @@
 use anyhow::bail;
-use fairy_core::{find_package_root, PackageJson};
+use fairy_core::{find_package_root, Package, PackageJson};
 use pathdiff::diff_paths;
 use relative_path::{RelativePath, RelativePathBuf};
 use std::{
@@ -36,14 +36,13 @@ use swc_ecma_transforms_optimization::inline_globals;
 
 use crate::{
     loader::{FileLoader, Loader},
-    package::Package,
     resolver::Resolver,
     transformers::{
         AssetsTransform, Externals as ExternalTransform, ImportTransform, ImportTransformer,
     },
 };
 
-pub type NodeResolver = CachingResolver<Resolver>;
+// pub type NodeResolver = CachingResolver<Resolver>;
 
 // #[cfg(not(feature = "resolver"))]
 // pub struct Wrapper {
@@ -101,7 +100,7 @@ pub struct Compiler {
     compiler: swc::Compiler,
     handler: Handler,
     globals: Globals,
-    resolver: Lrc<NodeResolver>,
+    resolver: Lrc<Resolver>,
     env: Lrc<AHashMap<JsWord, Expr>>,
     pub(crate) transformer: ImportTransform,
 }
@@ -123,10 +122,7 @@ impl Compiler {
         //     4096,
         //     Resolver::new(root.clone()), //NodeModulesResolver::new(TargetEnv::Node, Default::default(), true),
         // );
-        let resolver = CachingResolver::new(
-            4096,
-            Resolver::new(root.clone()), //NodeModulesResolver::new(TargetEnv::Node, Default::default(), true),
-        );
+        let resolver = Resolver::new(root.clone());
 
         let plugins = vec![
             Box::new(ExternalTransform::new(root.clone()))
@@ -157,38 +153,42 @@ impl Compiler {
     }
 
     pub fn resolve(&self, name: &str) -> anyhow::Result<Package> {
-        let filename = FileName::Real(self.root.join("main.js"));
+        // let filename = FileName::Real(self.root.join("main.js"));
 
-        let found = self.resolver.resolve(&filename, name)?;
+        // let found = self.resolver.resolve(&filename, name)?;
 
-        let path = match found {
-            FileName::Real(path) => path,
-            _ => bail!("invalid path"),
-        };
+        // let path = match found {
+        //     FileName::Real(path) => path,
+        //     _ => bail!("invalid path"),
+        // };
 
-        let root = match find_package_root(&path) {
-            Some(path) => path,
-            None => bail!("could not find package root"),
-        };
+        // let root = match find_package_root(&path) {
+        //     Some(path) => path,
+        //     None => bail!("could not find package root"),
+        // };
 
-        let entry = match diff_paths(&path, &root) {
-            Some(diff) => RelativePathBuf::from_path(diff)?,
-            None => bail!("could not resolve entry"),
-        };
+        // let entry = match diff_paths(&path, &root) {
+        //     Some(diff) => RelativePathBuf::from_path(diff)?,
+        //     None => bail!("could not resolve entry"),
+        // };
 
-        let pkgjson = PackageJson::load(&root)?;
+        // let pkgjson = PackageJson::load(&root)?;
 
-        Ok(Package {
-            pkgjson,
-            root,
-            entry,
-        })
+        // Ok(Package {
+        //     pkgjson,
+        //     root,
+        //     entry,
+        // })
+        match self.resolver.resolve_external(name) {
+            Some(ret) => Ok(ret),
+            None => bail!("could not resolve"),
+        }
     }
 
     pub fn create_bundler<'a>(
         &'a self,
         config: swc_bundler::Config,
-    ) -> swc_bundler::Bundler<'a, Loader, Lrc<NodeResolver>> {
+    ) -> swc_bundler::Bundler<'a, Loader, Lrc<Resolver>> {
         let loader = Loader::new(self.cm.clone(), self.env.clone());
 
         let bundler = Bundler::new(
