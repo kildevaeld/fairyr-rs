@@ -3,5 +3,12 @@
 members = [
   "fairy-core",
   "fairy-dev",
+  "fairy-cli",
   "fairy-http", # "fairy-render",
 ]
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+panic = "abort"
+strip = true

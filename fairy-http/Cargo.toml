@@ -11,7 +11,7 @@ default = []
 
 [dependencies]
 dale = {git = "https://github.com/kildevaeld/dale-rs"}
-dale-http = {git = "https://github.com/kildevaeld/dale-rs", features = ["headers"]}
+dale-http = {git = "https://github.com/kildevaeld/dale-rs", features = ["headers", "fs"]}
 dale-runtime = {git = "https://github.com/kildevaeld/dale-rs"}
 mime = "0.3"
 pathdiff = "0.2"

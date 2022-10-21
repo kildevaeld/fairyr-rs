@@ -19,13 +19,11 @@ where
         .and(filters::path("/"))
         .and(dale::filters::state(cfg.clone()).err_into::<dale_http::error::Error>())
         .and_then(|req: Arc<Options>| async move {
-            //
-
-            let template = (req.template)(RenderRequest {
+            let template = req.template.render(RenderRequest {
                 scripts: vec![req.entry.to_string()],
                 links: vec![],
                 content: None,
-            });
+            })?;
 
             let resp = Response::<B>::with(template).set(dale_http::headers::ContentType::html());
 
