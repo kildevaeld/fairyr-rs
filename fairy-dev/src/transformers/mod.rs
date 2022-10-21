@@ -6,6 +6,6 @@ mod require;
 pub use self::{
     assets::AssetsTransform,
     externals::{Externals, EXTENSIONS},
-    import::{ImportTransform, ImportTransformer},
+    import::{ImportTransform, ImportTransformer, ImportTransportFold},
     require::RequireTransform,
 };

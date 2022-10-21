@@ -35,8 +35,10 @@ swc_ecma_codegen = {version = "0.127"}
 swc_ecma_loader = {version = "0.41", features = ["node", "cache"]}
 swc_ecma_minifier = "0.159"
 swc_ecma_parser = {version = "0.122", features = []}
+swc_ecma_transforms = "0.198"
 swc_ecma_transforms_base = "0.111"
 swc_ecma_transforms_optimization = "0.167"
+swc_ecma_transforms_react = "0.155"
 swc_ecma_visit = {version = "0.80"}
 
 thiserror = "1"

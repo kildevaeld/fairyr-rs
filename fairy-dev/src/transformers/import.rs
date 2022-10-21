@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
-use relative_path::RelativePath;
+use relative_path::{RelativePath, RelativePathBuf};
 use swc_common::sync::Lrc;
 use swc_ecma_ast::{ImportDecl, Module, ModuleDecl, ModuleItem};
+use swc_ecma_visit::{noop_fold_type, FoldWith};
 
 pub trait ImportTransformer {
     fn rewrite_import(
@@ -94,10 +95,16 @@ impl ImportTransform {
     }
 }
 
-// impl VisitMut for ImportTransform {
-//     fn visit_mut_module(&mut self, node: &mut Module) {
-//         node.visit_mut_children_with(self);
+pub struct ImportTransportFold(pub ImportTransform, pub RelativePathBuf);
 
-//         self.process(&mut node.body);
-//     }
-// }
+impl swc_ecma_visit::Fold for ImportTransportFold {
+    noop_fold_type!();
+
+    fn fold_module(&mut self, node: Module) -> Module {
+        let mut node = node.fold_children_with(self);
+
+        self.0.process(&self.1, &mut node.body);
+
+        node
+    }
+}

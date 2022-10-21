@@ -3,6 +3,7 @@ use crate::{
     resolver::Resolver,
     transformers::{
         AssetsTransform, Externals as ExternalTransform, ImportTransform, ImportTransformer,
+        ImportTransportFold,
     },
 };
 use anyhow::bail;
@@ -14,7 +15,7 @@ use std::{
     sync::Arc,
 };
 use swc::{
-    config::{JscConfig, Options},
+    config::{JscConfig, Options, TransformConfig},
     TransformOutput,
 };
 use swc_atoms::{js_word, JsWord};
@@ -28,10 +29,11 @@ use swc_common::{
 };
 use swc_ecma_ast::{
     Bool, EsVersion, Expr, Ident, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr,
-    MetaPropKind, Program, PropName, Str,
+    MetaPropKind, PropName, Str,
 };
-use swc_ecma_parser::{parse_file_as_module, Syntax, TsConfig};
+use swc_ecma_parser::{Syntax, TsConfig};
 use swc_ecma_transforms_optimization::inline_globals;
+use swc_ecma_transforms_react::{Options as ReactOptions, Runtime as ReactRuntime};
 
 pub struct Compiler {
     cm: Lrc<SourceMap>,
@@ -121,39 +123,41 @@ impl Compiler {
 
         let es_version = EsVersion::Es2019;
 
-        let mut module = parse_file_as_module(&file, syntax, es_version, None, &mut Vec::default())
-            .expect("parse");
-
         let rel_path = diff_paths(path.as_ref(), &self.root).expect("relative path");
         let rel_path = RelativePath::from_path(&rel_path).expect("rel path");
 
-        self.transformer
-            .clone()
-            .process_module(rel_path, &mut module);
-
         let out = self.run(|| {
-            let program = self.compiler.transform(
+            let out = self.compiler.process_js_with_custom_pass(
+                file.clone(),
+                None,
                 &self.handler,
-                Program::Module(module),
-                false,
-                inline_globals(self.env.clone(), Default::default(), Default::default()),
-            );
-
-            let out = self.compiler.process_js(
-                &self.handler,
-                program,
                 &Options {
                     config: swc::config::Config {
                         jsc: JscConfig {
                             target: es_version.into(),
                             external_helpers: false.into(),
                             syntax: Some(syntax),
-
+                            transform: Some(TransformConfig {
+                                react: ReactOptions {
+                                    runtime: ReactRuntime::Automatic.into(),
+                                    ..Default::default()
+                                },
+                                ..Default::default()
+                            })
+                            .into(),
                             ..Default::default()
                         },
                         ..Default::default()
                     },
                     ..Default::default()
+                },
+                |_, _| {
+                    //
+                    inline_globals(self.env.clone(), Default::default(), Default::default())
+                },
+                |_, _| {
+                    //
+                    ImportTransportFold(self.transformer.clone(), rel_path.to_relative_path_buf())
                 },
             )?;
 
