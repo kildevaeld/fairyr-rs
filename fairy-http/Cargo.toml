@@ -8,6 +8,7 @@ version = "0.1.0"
 [features]
 # concurrent = ["rayon", "swc_common/concurrent", "swc/concurrent", "swc_bundler/concurrent"]
 default = []
+tokio = ["dale-runtime/tokio"]
 
 [dependencies]
 dale = {git = "https://github.com/kildevaeld/dale-rs"}
