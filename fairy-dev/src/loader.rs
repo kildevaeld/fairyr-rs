@@ -6,7 +6,7 @@ use swc_atoms::JsWord;
 use swc_bundler::{Load, ModuleData};
 use swc_common::{
     collections::AHashMap,
-    errors::{ColorConfig, Handler},
+    errors::{ColorConfig, Handler, HANDLER},
     pass::Repeated,
     source_map::FileLoader as SwcFileLoader,
     sync::Lrc,
@@ -77,16 +77,21 @@ impl Load for Loader {
 
         let module = helpers::HELPERS.set(&helpers, || {
             // Apply transforms (like decorators pass)
-            let mut module = inline_globals.fold_module(module);
 
-            loop {
-                module = pass.fold_module(module);
-                if !pass.changed() {
-                    break;
-                }
-            }
+            HANDLER.set(
+                &Handler::with_tty_emitter(ColorConfig::Auto, true, false, None),
+                move || {
+                    let mut module = inline_globals.fold_module(module);
 
-            module
+                    loop {
+                        module = pass.fold_module(module);
+                        if !pass.changed() {
+                            break;
+                        }
+                    }
+                    module
+                },
+            )
         });
 
         Ok(ModuleData {
