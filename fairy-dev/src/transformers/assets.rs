@@ -34,6 +34,8 @@ impl AssetsTransform {
     }
 }
 
+static ASSETS_EXTENSIONS: &'static [&'static str] = &["jpg", "jpeg", "png", "gif", "webp", "ico"];
+
 impl ImportTransformer for AssetsTransform {
     fn rewrite_import(
         &self,
@@ -53,6 +55,15 @@ impl ImportTransformer for AssetsTransform {
         let parent = file.parent().unwrap_or_else(|| &RelativePath::new("/"));
 
         let src = parent.join_normalized(import.src.value.to_string());
+
+        match src.extension() {
+            Some(ext) => {
+                if !ASSETS_EXTENSIONS.contains(&ext) {
+                    return Some(import);
+                }
+            }
+            None => return Some(import),
+        };
 
         let src = format!("/{}", src);
 
