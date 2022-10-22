@@ -50,13 +50,12 @@ impl Resolve for Resolver {
 
         match package {
             Some(package) => {
-                // let file_name = FileName::Real(package.entry.path.to_path(&package.root));
                 let file_name = FileName::Real(package.entry.path.to_logical_path(&package.root));
 
                 Ok(file_name)
             }
             None => {
-                bail!("path not found")
+                bail!("module not found: {} from base: {}", module_specifier, path)
             }
         }
     }
