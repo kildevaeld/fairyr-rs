@@ -102,7 +102,7 @@ impl Bundler {
             NODE_MODULES_PREFIX, &package.pkgjson.name, package.entry.path
         ));
 
-        let resolved = FileName::Real(dep.to_path(compiler.root()));
+        let resolved = FileName::Real(dep.to_logical_path(compiler.root()));
 
         entries.insert(package.pkgjson.name.clone(), resolved);
 

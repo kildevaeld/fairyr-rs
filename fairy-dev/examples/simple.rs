@@ -55,9 +55,9 @@ fn main() -> anyhow::Result<()> {
 
     // println!("{:#?}", package);
 
-    let names = resolver.resolve("/src/main.tsx")?;
+    let names = resolver.resolve("/node_modules/.fairy/prop-types")?;
 
-    println!("{}", names.content.to_string()?);
+    // println!("{}", names.content.to_string()?);
 
     // let deps = app.dependencies()?;
 

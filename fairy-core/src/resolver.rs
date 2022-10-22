@@ -185,7 +185,9 @@ impl Resolver {
         } else {
             for ext in EXTENSIONS {
                 let resolved_path = resolved_path.with_extension(*ext);
-                let fp_path = resolved_path.to_path(&self.root);
+                let fp_path = resolved_path.to_path(&pkg_root);
+
+                log::trace!("trying {:?}", fp_path);
 
                 if fp_path.exists() {
                     return Some(Package {
@@ -308,15 +310,21 @@ impl PackageJson {
             self.resolve_exports(exports, hint, target_env)
         } else {
             let (kind, path) = if hint == ImportHint::Require {
-                (self.kind, self.main.as_ref().unwrap())
+                (self.kind, self.main.as_ref().map(|m| m.as_str()).unwrap())
             } else {
                 match self.kind {
                     ModuleType::Commonjs => self
                         .module
                         .as_ref()
-                        .map(|m| (ModuleType::Esm, m))
-                        .unwrap_or_else(|| (ModuleType::Commonjs, self.main.as_ref().unwrap())),
-                    ModuleType::Esm => (ModuleType::Esm, self.main.as_ref().unwrap()),
+                        .map(|m| (ModuleType::Esm, m.as_str()))
+                        .unwrap_or_else(|| match self.main.as_ref() {
+                            Some(main) => (ModuleType::Commonjs, main.as_str()),
+                            None => (ModuleType::Commonjs, "./index.js"),
+                        }),
+                    ModuleType::Esm => (
+                        ModuleType::Esm,
+                        self.main.as_ref().map(|m| m.as_str()).unwrap(),
+                    ),
                 }
             };
 
