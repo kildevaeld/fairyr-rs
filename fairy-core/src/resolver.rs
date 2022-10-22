@@ -163,7 +163,14 @@ impl Resolver {
 
         let resolved_path = match diff_paths(&fp_path, &pkg_root) {
             Some(ret) => RelativePathBuf::from_path(ret).expect("path"),
-            None => return None,
+            None => {
+                log::error!(
+                    "could not get path diff for root: {:?}, path: {:?}",
+                    pkg_root,
+                    fp_path
+                );
+                return None;
+            }
         };
 
         if fp_path.exists() {
