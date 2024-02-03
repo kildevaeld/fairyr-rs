@@ -1,0 +1,13 @@
+digraph {
+    0 [ label = "Chunk { id: Path(\"/home/rasmus/Development/fairy-rs/fairy-bundler/examples/main.js\") }" ]
+    1 [ label = "Chunk { id: Path(\"/home/rasmus/Development/fairy-rs/fairy-bundler/examples/./models.js\") }" ]
+    2 [ label = "Chunk { id: Path(\"/home/rasmus/Development/fairy-rs/fairy-bundler/examples/./list.js\") }" ]
+    3 [ label = "Chunk { id: Path(\"/home/rasmus/Development/fairy-rs/fairy-bundler/examples/./other.js\") }" ]
+    4 [ label = "Chunk { id: Path(\"/home/rasmus/Development/fairy-rs/fairy-bundler/examples/./shared.js\") }" ]
+    0 -> 1 [ ]
+    2 -> 1 [ ]
+    0 -> 2 [ ]
+    3 -> 4 [ ]
+    0 -> 3 [ ]
+    0 -> 4 [ ]
+}

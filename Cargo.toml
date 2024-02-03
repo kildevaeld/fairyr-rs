@@ -4,7 +4,9 @@ members = [
   "fairy-core",
   "fairy-dev",
   "fairy-cli",
-  "fairy-http", # "fairy-render",
+  # "fairy-bundler",
+  "fairy-http",
+  # "fairy-render",
 ]
 
 [profile.release]
